@@ -7,17 +7,17 @@ let nextId = 3
 
 export const productsRepository = {
   findAll({ maxPrice } = {}) {
-    if (maxPrice === undefined) return [ ...products ]
-    return products.filter(p => p.price <= maxPrice)
+    if (maxPrice === undefined) return structuredClone(products)
+    return structuredClone(products.filter(p => p.price <= maxPrice))
   },
 
   findById(id) {
-    return products.find(p => p.id === id)
+    return structuredClone(products.find(p => p.id === id))
   },
 
   create({ name, price }) {
-    const newProduct = { id: ++nextId, name, price }
+    const newProduct = { id: nextId++, name, price }
     products.push(newProduct)
-    return newProduct
+    return structuredClone(newProduct)
   }
 }

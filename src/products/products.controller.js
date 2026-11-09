@@ -32,7 +32,7 @@ export const productsController = {
     const result = productsSchema.safeParse(req.body)
 
     if (!result.success) {
-      return res.status(400).json(result.error.issues)
+      return res.status(400).json(result.error.issues.map(({ path, message }) => ({ field: path[ 0 ], message })))
     }
 
     res.status(201).json(productsService.create(result.data))
