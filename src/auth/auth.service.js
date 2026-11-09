@@ -3,10 +3,21 @@ import jwt from 'jsonwebtoken'
 import { HttpError } from '../error/HttpError.js'
 import { JWT_SECRET } from '../config/env.js'
 import { authRepository } from './auth.repository.js'
+import { emailSchema } from './auth.schema.js'
 
 const dummyHash = await argon2.hash('make me a dummy hash')
 
 export const authService = {
+  createAdmin(email, hash) {
+    const emailSchemaResult = emailSchema.safeParse(email)
+
+    if (!emailSchemaResult.success) {
+      throw Error("Admin email did not pass validation")
+    }
+
+    authRepository.create({ email: emailSchemaResult.data, hashedPass: hash, role: 'admin' })
+  },
+
   async create({ email, password }) {
     if (authRepository.isEmailExist(email)) {
       throw new HttpError(409, 'Email already registered')

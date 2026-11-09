@@ -9,6 +9,10 @@ export const authRepository = {
     return userCredentials.some(c => c.email === email)
   },
 
+  getById(id) {
+    return structuredClone(userCredentials.find(c => c.id === id))
+  },
+
   getByEmail(email) {
     return structuredClone(userCredentials.find(c => c.email === email))
   },
