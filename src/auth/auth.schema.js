@@ -17,3 +17,9 @@ export const authLoginSchema = z.object({
   email: emailSchema,
   password: z.string().nonempty()
 })
+
+export const outputUserSchema = z.object({
+  id: z.number().positive(),
+  email: z.string(),
+  role: z.enum(['admin', 'customer'])
+})

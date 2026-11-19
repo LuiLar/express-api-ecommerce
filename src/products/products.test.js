@@ -25,7 +25,8 @@ let tempCreatedProds
 const mapBodyResponse = ({ name, price }) => ({ name, price })
 
 beforeAll(async () => {
-  authService.createAdmin(ADMIN.email, await argon2.hash(ADMIN.password))
+  await prisma.user.deleteMany({})
+  await authService.createAdmin(ADMIN.email, await argon2.hash(ADMIN.password))
   await request(app).post('/auth/register').send(CUSTOMER)
 
   adminToken = await login(ADMIN)

@@ -1,4 +1,4 @@
-import { authLoginSchema, authRegisterSchema } from './auth.schema.js'
+import { authLoginSchema, authRegisterSchema, outputUserSchema } from './auth.schema.js'
 import { authService } from './auth.service.js'
 
 const mapIssues = (issues) => issues.map(({ path, message }) => ({ field: path[ 0 ], message }))
@@ -13,7 +13,7 @@ export const authController = {
 
     const createdCredential = await authService.create(result.data)
 
-    res.status(201).json(createdCredential)
+    res.status(201).json(outputUserSchema.parse(createdCredential))
   },
 
   async login(req, res) {

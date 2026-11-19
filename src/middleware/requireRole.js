@@ -1,8 +1,8 @@
 import { HttpError } from '../error/HttpError.js'
 import { authRepository } from '../auth/auth.repository.js'
 
-export const requireRole = (role) => (req, _, next) => {
-  const user = authRepository.getById(req.user.id)
+export const requireRole = (role) => async (req, _, next) => {
+  const user = await authRepository.getById(req.user.id)
 
   if (!user) {
     throw new HttpError(401, 'Invalid or expired token')

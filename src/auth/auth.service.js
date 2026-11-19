@@ -8,28 +8,30 @@ import { emailSchema } from './auth.schema.js'
 const dummyHash = await argon2.hash('make me a dummy hash')
 
 export const authService = {
-  createAdmin(email, hash) {
+  async createAdmin(email, hash) {
     const emailSchemaResult = emailSchema.safeParse(email)
 
     if (!emailSchemaResult.success) {
       throw Error("Admin email did not pass validation")
     }
 
-    authRepository.create({ email: emailSchemaResult.data, hashedPass: hash, role: 'admin' })
+    const existing = await authRepository.getByEmail(emailSchemaResult.data)
+
+    if (existing?.role === 'admin') return
+    // Fail-fast: promoting a customer would hand admin to whoever registered that email first
+    if (existing) throw Error("ADMIN_EMAIL belongs to a non-admin user")
+
+    await authRepository.create({ email: emailSchemaResult.data, hashedPass: hash, role: 'admin' })
   },
 
   async create({ email, password }) {
-    if (authRepository.isEmailExist(email)) {
-      throw new HttpError(409, 'Email already registered')
-    }
-
     const hashedPass = await argon2.hash(password)
 
-    return authRepository.create({ email, hashedPass })
+    return await authRepository.create({ email, hashedPass })
   },
 
   async verifyCredentials({ email, password }) {
-    const foundCredentials = authRepository.getByEmail(email)
+    const foundCredentials = await authRepository.getByEmail(email)
 
     if (!foundCredentials) {
       await argon2.verify(dummyHash, password)

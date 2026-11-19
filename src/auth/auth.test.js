@@ -1,9 +1,18 @@
 import request from 'supertest'
 import jwt from 'jsonwebtoken'
 import { app } from '../app.js'
+import prisma from '../provider/prisma.js'
 
 const register = (body) => request(app).post('/auth/register').send(body)
 const login = (body) => request(app).post('/auth/login').send(body)
+
+beforeAll(async () => {
+  await prisma.user.deleteMany({})
+})
+
+afterAll(async () => {
+  await prisma.$disconnect()
+})
 
 describe('POST /auth/register', () => {
   test('returns 201 with id, email and role, never the hash', async () => {
