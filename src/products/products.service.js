@@ -9,7 +9,7 @@ export const productsService = {
     return productsRepository.findById(id)
   },
 
-  create(data) {
-    return productsRepository.create(data)
+  async create(data) {
+    return await productsRepository.create(data)
   }
 }

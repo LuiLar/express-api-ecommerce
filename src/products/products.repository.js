@@ -1,23 +1,30 @@
-// TODO: Remove mocked data in favor of a DB
-const products = [
-  { id: 1, name: 'Remera', price: 20 },
-  { id: 2, name: 'Gorra', price: 10 },
-]
-let nextId = 3
+import { HttpError } from '../error/HttpError.js'
+import prisma from '../provider/prisma.js'
 
 export const productsRepository = {
   findAll({ maxPrice } = {}) {
-    if (maxPrice === undefined) return structuredClone(products)
-    return structuredClone(products.filter(p => p.price <= maxPrice))
+    let args = { orderBy: { id: 'asc' } }
+
+    if (maxPrice !== undefined) {
+      args = Object.assign(args, { where: { price: { lte: maxPrice } } })
+    }
+
+    return prisma.product.findMany(args)
   },
 
   findById(id) {
-    return structuredClone(products.find(p => p.id === id))
+    return prisma.product.findUnique({ where: { id } })
   },
 
-  create({ name, price }) {
-    const newProduct = { id: nextId++, name, price }
-    products.push(newProduct)
-    return structuredClone(newProduct)
+  async create({ name, price }) {
+    try {
+      return await prisma.product.create({ data: { name, price } })
+    } catch (e) {
+      if (e.code === 'P2002') {
+        throw new HttpError(409, 'Product already exists')
+      }
+
+      throw e
+    }
   }
 }

@@ -1,3 +1,5 @@
+//qimport 'dotenv/config'
+
 if (!process.env.JWT_SECRET || String(process.env.JWT_SECRET).trim() === '') {
   throw Error("Missing JWT_SECRET var or its value")
 }
@@ -10,8 +12,12 @@ if (process.env.ADMIN_PASSWORD_HASH && (!process.env.ADMIN_EMAIL || String(proce
 if (process.env.ADMIN_PASSWORD_HASH && !process.env.ADMIN_PASSWORD_HASH.startsWith('$argon2id$')) {
   throw Error("Invalid argon2 hash for admin credentials")
 }
+if (!process.env.DATABASE_URL || String(process.env.DATABASE_URL).trim() === '') {
+  throw Error("Missing DATABASE_URL var or its value")
+}
 
 export const JWT_SECRET = process.env.JWT_SECRET
 export const PORT = !!process.env.PORT ? process.env.PORT : 3000
 export const ADMIN_EMAIL = process.env.ADMIN_EMAIL
 export const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH
+export const DATABASE_URL = process.env.DATABASE_URL

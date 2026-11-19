@@ -1,12 +1,14 @@
 import { productsService } from './products.service.js'
-import { productsSchema } from './products.schema.js'
+import { idSchema, inputProductsSchema, outputProductSchema } from './products.schema.js'
 
 export const productsController = {
-  list(req, res) {
+  async list(req, res) {
     const queryRaw = req.query.maxPrice
+    let response
 
     if (queryRaw == undefined || queryRaw == '') {
-      return res.status(200).json(productsService.list())
+      response = await productsService.list()
+      return res.status(200).json(response.map(p => outputProductSchema.parse(p)))
     }
 
     const maxPrice = Number(queryRaw)
@@ -15,26 +17,36 @@ export const productsController = {
       return res.status(400).json({ message: 'maxPrice has to be a number' })
     }
 
-    res.status(200).json(productsService.list({ maxPrice }))
+    response = await productsService.list({ maxPrice })
+    res.status(200).json(response.map(p => outputProductSchema.parse(p)))
   },
 
-  byId(req, res) {
-    const product = productsService.getById(Number(req.params.id))
+  async byId(req, res) {
+    const paramId = idSchema.safeParse(Number(req.params.id))
 
-    if (!product) {
+    if (!paramId.success) {
+      return res.status(400).json({ message: 'Invalid ID' })
+    }
+
+    const response = await productsService.getById(paramId.data)
+
+    if (!response) {
       return res.status(404).json({ message: 'Product not found' })
     }
 
-    res.status(200).json(product)
+    res.status(200).json(outputProductSchema.parse(response))
   },
 
-  create(req, res) {
-    const result = productsSchema.safeParse(req.body)
+  async create(req, res) {
+    const result = inputProductsSchema.safeParse(req.body)
 
     if (!result.success) {
       return res.status(400).json(result.error.issues.map(({ path, message }) => ({ field: path[ 0 ], message })))
     }
 
-    res.status(201).json(productsService.create(result.data))
+    const response = await productsService.create(result.data)
+
+    res.status(201).json(outputProductSchema.parse(response))
+
   }
 }
