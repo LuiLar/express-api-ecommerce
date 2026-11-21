@@ -4,6 +4,10 @@ import prisma, { Prisma } from "../provider/prisma.js"
 import { ordersRepository } from "./orders.repository.js"
 
 export const ordersService = {
+  stats() {
+    return ordersRepository.stats()
+  },
+
   list(userId) {
     return ordersRepository.findByUserId(userId)
   },

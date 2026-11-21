@@ -25,3 +25,10 @@ export const outputOrderSchema = z.object({
   total: z.coerce.number(),
   createdAt: z.date()
 })
+
+export const outputStatsSchema = z.object({
+  productId: z.number().positive(),
+  name: z.string().nonempty(),
+  unitsSold: z.coerce.number(),
+  revenue: z.coerce.number()
+})

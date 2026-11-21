@@ -148,9 +148,10 @@ describe('POST /orders', () => {
 })
 
 // Seeds an order directly with Prisma: full control over createdAt and prices
-const seedOrder = (userId, createdAt, items) => prisma.order.create({
+const seedOrder = (userId, createdAt, items, status = 'pending') => prisma.order.create({
   data: {
     userId,
+    status,
     createdAt: new Date(createdAt),
     total: items.reduce((sum, i) => sum + i.quantity * i.unitPrice, 0),
     items: { create: items }
@@ -223,5 +224,62 @@ describe('GET /orders', () => {
 
     expect(list.body[ 0 ].total).toBe(10.99)
     expect(list.body[ 0 ].items[ 0 ].unitPrice).toBe(10.99)
+  })
+})
+
+describe('GET /orders/stats', () => {
+  const getStats = (token) => request(app).get('/orders/stats').set('Authorization', `Bearer ${token}`)
+
+  test('returns 401 without a token', async () => {
+    const res = await request(app).get('/orders/stats')
+
+    expect(res.status).toBe(401)
+  })
+
+  test('returns 403 for a customer', async () => {
+    const res = await getStats(customerToken)
+
+    expect(res.status).toBe(403)
+  })
+
+  test('lists every product with 0 when nothing was sold', async () => {
+    const res = await getStats(adminToken)
+
+    expect(res.status).toBe(200)
+    expect(res.body).toEqual([
+      { productId: taza.id, name: 'Taza', unitsSold: 0, revenue: 0 },
+      { productId: chicle.id, name: 'Chicle', unitsSold: 0, revenue: 0 },
+      { productId: ultima.id, name: 'Ultima', unitsSold: 0, revenue: 0 }
+    ])
+  })
+
+  test('sums units and revenue per product across users, ignoring cancelled orders, by revenue desc', async () => {
+    await seedOrder(customerId, '2026-01-01', [
+      { productId: taza.id, quantity: 2, unitPrice: 10.99 },
+      { productId: chicle.id, quantity: 3, unitPrice: 0.10 }
+    ])
+    await seedOrder(otherId, '2026-01-02', [ { productId: taza.id, quantity: 1, unitPrice: 10.99 } ], 'paid')
+    // Cancelled: must not count. Ultima was ONLY sold here, so it must still appear with 0
+    await seedOrder(customerId, '2026-01-03', [
+      { productId: chicle.id, quantity: 5, unitPrice: 0.10 },
+      { productId: ultima.id, quantity: 1, unitPrice: 20.00 }
+    ], 'cancelled')
+
+    const res = await getStats(adminToken)
+
+    expect(res.status).toBe(200)
+    expect(res.body).toEqual([
+      { productId: taza.id, name: 'Taza', unitsSold: 3, revenue: 32.97 },
+      { productId: chicle.id, name: 'Chicle', unitsSold: 3, revenue: 0.3 },
+      { productId: ultima.id, name: 'Ultima', unitsSold: 0, revenue: 0 }
+    ])
+  })
+
+  test('uses the price paid, not the current product price', async () => {
+    await seedOrder(customerId, '2026-01-01', [ { productId: taza.id, quantity: 1, unitPrice: 5.00 } ])
+
+    const res = await getStats(adminToken)
+
+    expect(res.body[ 0 ]).toEqual({ productId: taza.id, name: 'Taza', unitsSold: 1, revenue: 5 })
   })
 })

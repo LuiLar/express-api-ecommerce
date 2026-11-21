@@ -1,7 +1,13 @@
-import { inputOrderSchema, outputOrderSchema } from "./orders.schema.js"
+import { inputOrderSchema, outputOrderSchema, outputStatsSchema } from "./orders.schema.js"
 import { ordersService } from "./orders.service.js"
 
 export const ordersController = {
+  async stats(_, res) {
+    const stats = await ordersService.stats()
+
+    res.status(200).json(stats.map(s => outputStatsSchema.parse(s)))
+  },
+
   async list(req, res) {
     const orders = await ordersService.list(req.user.id)
 
