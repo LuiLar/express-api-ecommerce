@@ -44,9 +44,9 @@ export const productsController = {
       return res.status(400).json(result.error.issues.map(({ path, message }) => ({ field: path[ 0 ], message })))
     }
 
-    const response = await productsService.create(result.data)
+    const createdProduct = await productsService.create(result.data)
 
-    res.status(201).json(outputProductSchema.parse(response))
+    res.status(201).json(outputProductSchema.parse(createdProduct))
 
   }
 }

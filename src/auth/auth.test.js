@@ -7,6 +7,7 @@ const register = (body) => request(app).post('/auth/register').send(body)
 const login = (body) => request(app).post('/auth/login').send(body)
 
 beforeAll(async () => {
+  await prisma.order.deleteMany({})
   await prisma.user.deleteMany({})
 })
 

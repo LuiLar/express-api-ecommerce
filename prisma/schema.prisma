@@ -12,23 +12,62 @@ enum Role {
   customer
 }
 
+enum OrderStatus {
+  pending
+  paid
+  cancelled
+}
+
 model User {
-  id          Int       @id @default(autoincrement())
-  email       String    @unique
-  hashedPass  String    @map("hashed_pass")
-  role        Role      @default(customer)
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz()
-  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
+  id         Int      @id @default(autoincrement())
+  email      String   @unique
+  hashedPass String   @map("hashed_pass")
+  role       Role     @default(customer)
+  orders     Order[]
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz()
 
   @@map("users")
 }
 
 model Product {
-  id         Int       @id @default(autoincrement())
-  name       String    @unique
-  price      Decimal   @db.Decimal(10, 2)
-  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz()
-  updatedAt  DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
+  id        Int         @id @default(autoincrement())
+  name      String      @unique
+  price     Decimal     @db.Decimal(10, 2)
+  stock     Int         @default(0)
+  items     OrderItem[]
+  createdAt DateTime    @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt DateTime    @updatedAt @map("updated_at") @db.Timestamptz()
 
   @@map("products")
+}
+
+model Order {
+  id        Int         @id @default(autoincrement())
+  user      User        @relation(fields: [userId], references: [id])
+  userId    Int         @map("user_id")
+  status    OrderStatus @default(pending)
+  items     OrderItem[]
+  total     Decimal     @db.Decimal(10, 2)
+  createdAt DateTime    @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt DateTime    @updatedAt @map("updated_at") @db.Timestamptz()
+
+  @@index([userId])
+  @@map("orders")
+}
+
+model OrderItem {
+  id        Int      @id @default(autoincrement())
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId   Int      @map("order_id")
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+  productId Int      @map("product_id")
+  quantity  Int
+  unitPrice Decimal  @map("unit_price") @db.Decimal(10, 2)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  @@unique([orderId, productId])
+  @@index([productId])
+  @@map("order_items")
 }
