@@ -6,6 +6,7 @@ import prisma from '../provider/prisma.js'
 
 const ADMIN = { email: 'admin@test.com', password: 'Admin123!' }
 const CUSTOMER = { email: 'customer@test.com', password: 'Customer123!' }
+const OTHER = { email: 'other@test.com', password: 'Other123!' }
 
 const login = async (body) => (await request(app).post('/auth/login').send(body)).body.token
 const postOrder = (token, body) => request(app)
@@ -16,6 +17,8 @@ const stockOf = async (id) => (await prisma.product.findUnique({ where: { id } }
 
 let adminToken
 let customerToken
+let customerId
+let otherId
 let taza // price 10.99, stock 5
 let chicle // price 0.10, stock 10
 let ultima // price 20.00, stock 1
@@ -27,6 +30,9 @@ beforeAll(async () => {
   await request(app).post('/auth/register').send(CUSTOMER)
   adminToken = await login(ADMIN)
   customerToken = await login(CUSTOMER)
+  await request(app).post('/auth/register').send(OTHER)
+  customerId = (await prisma.user.findUnique({ where: { email: CUSTOMER.email } })).id
+  otherId = (await prisma.user.findUnique({ where: { email: OTHER.email } })).id
 })
 
 // Each test starts with fresh stock and no orders
@@ -138,5 +144,84 @@ describe('POST /orders', () => {
     expect(responses.map(r => r.status).sort()).toEqual([ 201, 409 ])
     expect(await stockOf(ultima.id)).toBe(0)
     expect(await prisma.order.count()).toBe(1)
+  })
+})
+
+// Seeds an order directly with Prisma: full control over createdAt and prices
+const seedOrder = (userId, createdAt, items) => prisma.order.create({
+  data: {
+    userId,
+    createdAt: new Date(createdAt),
+    total: items.reduce((sum, i) => sum + i.quantity * i.unitPrice, 0),
+    items: { create: items }
+  }
+})
+
+describe('GET /orders', () => {
+  const getOrders = (token) => request(app).get('/orders').set('Authorization', `Bearer ${token}`)
+
+  test('returns 401 without a token', async () => {
+    const res = await request(app).get('/orders')
+
+    expect(res.status).toBe(401)
+  })
+
+  test('returns 403 for an admin', async () => {
+    const res = await getOrders(adminToken)
+
+    expect(res.status).toBe(403)
+  })
+
+  test('returns 200 with an empty array when the customer has no orders', async () => {
+    await seedOrder(otherId, '2026-01-01', [ { productId: taza.id, quantity: 1, unitPrice: 10.99 } ])
+
+    const res = await getOrders(customerToken)
+
+    expect(res.status).toBe(200)
+    expect(res.body).toEqual([])
+  })
+
+  test('returns only my orders, newest first, with items and product names', async () => {
+    const older = await seedOrder(customerId, '2026-01-01', [ { productId: taza.id, quantity: 2, unitPrice: 10.99 } ])
+    await seedOrder(otherId, '2026-01-02', [ { productId: chicle.id, quantity: 1, unitPrice: 0.10 } ])
+    const newer = await seedOrder(customerId, '2026-01-03', [
+      { productId: chicle.id, quantity: 3, unitPrice: 0.10 },
+      { productId: ultima.id, quantity: 1, unitPrice: 20.00 }
+    ])
+
+    const res = await getOrders(customerToken)
+
+    expect(res.status).toBe(200)
+    expect(res.body).toEqual([
+      {
+        id: newer.id,
+        status: 'pending',
+        total: 20.3,
+        createdAt: '2026-01-03T00:00:00.000Z',
+        items: [
+          { productId: chicle.id, name: 'Chicle', quantity: 3, unitPrice: 0.1 },
+          { productId: ultima.id, name: 'Ultima', quantity: 1, unitPrice: 20 }
+        ]
+      },
+      {
+        id: older.id,
+        status: 'pending',
+        total: 21.98,
+        createdAt: '2026-01-01T00:00:00.000Z',
+        items: [ { productId: taza.id, name: 'Taza', quantity: 2, unitPrice: 10.99 } ]
+      }
+    ])
+  })
+
+  test('keeps the price paid even if the product price changes later', async () => {
+    const res = await postOrder(customerToken, { items: [ { productId: taza.id, quantity: 1 } ] })
+    expect(res.status).toBe(201)
+
+    await prisma.product.update({ where: { id: taza.id }, data: { price: 99.99 } })
+
+    const list = await getOrders(customerToken)
+
+    expect(list.body[ 0 ].total).toBe(10.99)
+    expect(list.body[ 0 ].items[ 0 ].unitPrice).toBe(10.99)
   })
 })

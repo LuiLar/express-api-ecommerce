@@ -4,6 +4,10 @@ import prisma, { Prisma } from "../provider/prisma.js"
 import { ordersRepository } from "./orders.repository.js"
 
 export const ordersService = {
+  list(userId) {
+    return ordersRepository.findByUserId(userId)
+  },
+
   async create(userId, items) {
     return prisma.$transaction(async (tx) => {
       const itemsAsc = [ ...items ].sort((a, b) => a.productId - b.productId)

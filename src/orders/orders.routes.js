@@ -6,4 +6,5 @@ import { requireRole } from "../middleware/requireRole.js";
 
 export const ordersRouter = Router()
 
+ordersRouter.get('/', auth, requireRole('customer'), ordersController.list)
 ordersRouter.post('/', contentTypeValidator, auth, requireRole('customer'), ordersController.create)

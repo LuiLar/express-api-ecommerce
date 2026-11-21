@@ -18,7 +18,10 @@ export const inputOrderSchema = z.object({
 export const outputOrderSchema = z.object({
   id: z.number().positive(),
   status: z.enum([ 'pending', 'paid', 'cancelled' ]),
-  items: z.array(itemSchema.extend({ unitPrice: z.coerce.number() })),
+  items: z.array(itemSchema.extend({
+    unitPrice: z.coerce.number(),
+    name: z.string().optional()
+  })),
   total: z.coerce.number(),
   createdAt: z.date()
 })
