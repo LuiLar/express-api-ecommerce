@@ -42,7 +42,7 @@ afterAll(async () => {
 })
 
 describe('GET /products', () => {
-  test('returns 200 with the seeded products', async () => {
+  test('return 200 with the seeded products', async () => {
     const res = await request(app).get('/products')
 
     expect(res.status).toBe(200)
@@ -64,7 +64,7 @@ describe('GET /products', () => {
     expect(res.body).toHaveLength(3)
   })
 
-  test('returns 400 when maxPrice is not a number', async () => {
+  test('return 400 when maxPrice is not a number', async () => {
     const res = await request(app).get('/products?maxPrice=abc')
 
     expect(res.status).toBe(400)
@@ -72,27 +72,27 @@ describe('GET /products', () => {
 })
 
 describe('GET /products/:id', () => {
-  test('returns 200 with the product', async () => {
+  test('return 200 with the product', async () => {
     const res = await request(app).get(`/products/${tempCreatedProds[ 0 ].id}`)
 
     expect(res.status).toBe(200)
     expect(mapBodyResponse(res.body)).toEqual(mockedProducts[ 0 ])
   })
 
-  test('returns 404 when the product does not exist', async () => {
+  test('return 404 when the product does not exist', async () => {
     const res = await request(app).get(`/products/${tempCreatedProds[ tempCreatedProds.length - 1 ].id + 1}`)
 
     expect(res.status).toBe(404)
     expect(res.body).toEqual({ message: 'Product not found' })
   })
 
-  test('returns 404 for the max INT id (valid but missing)', async () => {
+  test('return 404 for the max INT id (valid but missing)', async () => {
     const res = await request(app).get('/products/2147483647')
 
     expect(res.status).toBe(404)
   })
 
-  test.each([ 'abc', '1.5', '0', '-1', '2147483648', '99999999999' ])('returns 400 when the ID is %s', async (id) => {
+  test.each([ 'abc', '1.5', '0', '-1', '2147483648', '99999999999' ])('return 400 when the ID is %s', async (id) => {
     const res = await request(app).get(`/products/${id}`)
 
     expect(res.status).toBe(400)
@@ -103,13 +103,13 @@ describe('GET /products/:id', () => {
 describe('POST /products', () => {
   const inputProduct = { name: 'Taza', price: 5.00 }
 
-  test('returns 401 without a token', async () => {
+  test('return 401 without a token', async () => {
     const res = await request(app).post('/products').send(inputProduct)
 
     expect(res.status).toBe(401)
   })
 
-  test('returns 403 for a customer', async () => {
+  test('return 403 for a customer', async () => {
     const res = await request(app)
       .post('/products')
       .set('Authorization', `Bearer ${customerToken}`)
@@ -118,7 +118,7 @@ describe('POST /products', () => {
     expect(res.status).toBe(403)
   })
 
-  test('returns 400 with issues when the body is invalid', async () => {
+  test('return 400 with issues when the body is invalid', async () => {
     const res = await request(app)
       .post('/products')
       .set('Authorization', `Bearer ${adminToken}`)
@@ -128,7 +128,7 @@ describe('POST /products', () => {
     expect(Array.isArray(res.body)).toBe(true)
   })
 
-  test('returns 201 and the product is listed afterwards', async () => {
+  test('return 201 and the product is listed afterwards', async () => {
     const res = await request(app)
       .post('/products')
       .set('Authorization', `Bearer ${adminToken}`)
@@ -143,7 +143,7 @@ describe('POST /products', () => {
     expect(byId.body).toEqual(res.body)
   })
 
-  test('returns 201 for the max price allowed by DECIMAL(10,2)', async () => {
+  test('return 201 for the max price allowed by DECIMAL(10,2)', async () => {
     const res = await request(app)
       .post('/products')
       .set('Authorization', `Bearer ${adminToken}`)
@@ -153,7 +153,7 @@ describe('POST /products', () => {
     expect(res.body.price).toBe(99_999_999.99)
   })
 
-  test('returns 400 for the first price above DECIMAL(10,2)', async () => {
+  test('return 400 for the first price above DECIMAL(10,2)', async () => {
     const res = await request(app)
       .post('/products')
       .set('Authorization', `Bearer ${adminToken}`)

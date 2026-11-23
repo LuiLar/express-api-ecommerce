@@ -16,14 +16,14 @@ afterAll(async () => {
 })
 
 describe('POST /auth/register', () => {
-  test('returns 201 with id, email and role, never the hash', async () => {
+  test('return 201 with id, email and role, never the hash', async () => {
     const res = await register({ email: 'ana@mail.com', password: 'Secreta123!' })
 
     expect(res.status).toBe(201)
     expect(res.body).toEqual({ id: expect.any(Number), email: 'ana@mail.com', role: 'customer' })
   })
 
-  test('returns 409 when the email is already registered, ignoring case and spaces', async () => {
+  test('return 409 when the email is already registered, ignoring case and spaces', async () => {
     await register({ email: 'dup@mail.com', password: 'Secreta123!' })
 
     const res = await register({ email: '  DUP@Mail.com ', password: 'Secreta123!' })
@@ -43,7 +43,7 @@ describe('POST /auth/register', () => {
     [ 'empty body', {} ],
     [ 'invalid email', { email: 'nope', password: 'Secreta123!' } ],
     [ 'weak password', { email: 'weak@mail.com', password: 'abc' } ],
-  ])('returns 400 for %s', async (_, body) => {
+  ])('return 400 for %s', async (_, body) => {
     const res = await register(body)
 
     expect(res.status).toBe(400)
@@ -75,7 +75,7 @@ describe('POST /auth/login', () => {
     await register(user)
   })
 
-  test('returns 200 with a token whose payload only has sub, iat and exp (15 minutes)', async () => {
+  test('return 200 with a token whose payload only has sub, iat and exp (15 minutes)', async () => {
     const res = await login(user)
 
     expect(res.status).toBe(200)
@@ -85,14 +85,14 @@ describe('POST /auth/login', () => {
     expect(payload.exp - payload.iat).toBe(15 * 60)
   })
 
-  test('returns 401 "Invalid credentials" when the password is wrong', async () => {
+  test('return 401 "Invalid credentials" when the password is wrong', async () => {
     const res = await login({ email: user.email, password: 'wrongPass' })
 
     expect(res.status).toBe(401)
     expect(res.body).toEqual({ message: "Invalid credentials" })
   })
 
-  test('returns 401 with the SAME body when the email does not exist', async () => {
+  test('return 401 with the SAME body when the email does not exist', async () => {
     const res = await login({ email: 'wrong@email.com', password: user.password })
 
     expect(res.status).toBe(401)
@@ -105,7 +105,7 @@ describe('POST /auth/login', () => {
     expect(res.status).toBe(200)
   })
 
-  test('returns 400 when the password is empty', async () => {
+  test('return 400 when the password is empty', async () => {
     const res = await login({ email: user.email, password: '' })
 
     expect(res.status).toBe(400)
